@@ -13,6 +13,8 @@ The code is also known as SFQ (super fast and quality) and has the following adv
  * ```Bx, By, Bz``` - ambiguous magnetic field components
  * ```pos``` - position of the magnetograms ```pos = [x_min, y_min, x_max, y_max]```
  * ```Rsun``` - radius of the Sun given in the same units as ```pos```
+ 
+ [example_hinode.pro](example_hinode.pro) contains an example of processing Hinode SOT/SP magnetogram.
 
 ## Acknowledging SFQ
 When you publish your result obtained with the use of our code, please city the paper ["Very Fast and Accurate Azimuth Disambiguation of Vector Magnetograms" Rudenko, G. V. And Anfinogentov, S. A.:2014, Solar Physics, Volume 289, Issue 5, pp.1499-15](http://adsabs.harvard.edu/abs/2014SoPh..289.1499R)

@@ -1,4 +1,4 @@
-#  Very Dast and Accurate disambiguation code 
+#  Very Fast and Accurate disambiguation code 
 This is an IDL code for fast disambiguation of solar vector magnetograms.
 The code is also known as SFQ (super fast and quality) and has the following advantages:
 

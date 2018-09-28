@@ -6,7 +6,7 @@
 ;
 ; :Author: George rudenko(rud@iszf.irk.ru) and Sergey Anfinogentov (anfinogentov@iszf.irk.ru)
 ;-
-function sfq_step1,mag,pot,silent=silent, acute = acute
+function sfq_step1,mag,pot,silent=silent, acute = acute, fix_field = fix_field
   time=systime(/sec)
   if not keyword_set(silent) then message,'starting preliminary SFQ  disambiguation',/info
   ind=where(mag.t2 lt 0)

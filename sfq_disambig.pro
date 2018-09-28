@@ -40,22 +40,23 @@
 ;Rudenko, G. V. And Anfinogentov, S. A.:2014, Solar Physics, Volume 289, Issue 5, pp.1499-1516 
 
 ;-
-pro sfq_disambig,bx_,by_,bz_,apos,Rsun,solis=solis,hmi=hmi,silent=silent, acute = acute
+pro sfq_disambig,bx_,by_,bz_,apos,Rsun,solis=solis,hmi=hmi,silent=silent, acute = acute, fix_field = fix_field
   time=systime(/sec)
   s=get_str_mag(bx_,by_,bz_,apos,Rsun)
   if  (((s.pos(2)-s.pos(0)) lt .5*s.qs.r) or (n_elements(bx_) lt (1024l * 1024l))) then begin
-    s=sfq_frame(s,solis=solis,hmi=hmi,silent=silent, acute = acute)
+    s=sfq_frame(s,solis=solis,hmi=hmi,silent=silent, acute = acute, fix_field = fix_field)
     bx_=s.t1&by_=s.t2
     if not keyword_set(silent) then message,'Full SFQ disambiguation complete in '+strcompress(systime(/sec)-time,/remove)+' seconds',/info
     return
   endif
   pot=pex_bl(s,silent=silent)
-  s=sfq_step1(s,pot, acute = acute)
+  s=sfq_step1(s,pot, acute = acute, fix_field = fix_field)
   by=s.t1
   if n_elements(solis) le 0 then solis=0
   if keyword_set(hmi) then solis=1
   if solis ne 0 then solis=1
-  if solis eq 1 then sfq_clean,by,bz,/mode,silent=silent else sfq_clean,by,bz,silent=silent
+  if solis eq 1 then sfq_clean,by,bz,/mode,silent=silent, fix_field = fix_field $
+     else sfq_clean,by,bz,silent=silent, fix_field = fix_field
   s.t1=by
   s.t2=bz
   bx_=by&by_=bz

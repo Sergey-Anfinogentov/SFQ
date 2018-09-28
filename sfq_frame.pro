@@ -7,7 +7,7 @@
 ;
 ; :Author: George rudenko(rud@iszf.irk.ru) and Sergey Anfinogentov (anfinogentov@iszf.irk.ru)
 ;-
-function sfq_frame,s,solis=solis,hmi=hmi,silent=silent, acute = acute
+function sfq_frame,s,solis=solis,hmi=hmi,silent=silent, acute = acute, fix_field = fix_field
   time=systime(/sec)
   if not keyword_set(silent) then message,'starting precise potential field calculating',/info
   pot=pot_vmag(s,/simple)
@@ -17,7 +17,7 @@ function sfq_frame,s,solis=solis,hmi=hmi,silent=silent, acute = acute
   bz=s.t2
   
   sz = size(by)
-  bo = 10
+  bo = 0
   by_ = dblarr(sz[1]+bo*2,sz[2]+bo*2)
   bz_ = dblarr(sz[1]+bo*2,sz[2]+bo*2)
    by_[bo:bo+sz[1] -1,bo:bo+sz[2] -1] =by
@@ -28,7 +28,7 @@ function sfq_frame,s,solis=solis,hmi=hmi,silent=silent, acute = acute
   if n_elements(solis) le 0 then solis=0
   if keyword_set(hmi) then solis=1
   if solis ne 0 then solis=1
-  if solis eq 1 then sfq_clean,by_,bz_,/mode else sfq_clean,by_,bz_
+  if solis eq 1 then sfq_clean,by_,bz_,/mode, fix_field = fix_field else sfq_clean,by_,bz_, fix_field = fix_field
   by = by_[bo:bo+sz[1] -1,bo:bo+sz[2] -1]
   bz = bz_[bo:bo+sz[1] -1,bo:bo+sz[2] -1]
   s.t1=by

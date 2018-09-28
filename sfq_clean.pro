@@ -6,20 +6,20 @@
 ;
 ; :Author: George rudenko(rud@iszf.irk.ru) and Sergey Anfinogentov (anfinogentov@iszf.irk.ru)
 ;-
-pro sfq_clean,bx,by,s,gauss=gauss,median=median,show=show,mode=mode,silent=silent
+pro sfq_clean,bx,by,s,gauss=gauss,median=median,show=show,mode=mode,silent=silent, fix_field = fix_field
   if not keyword_set(s) then begin
     if not keyword_set(silent) then begin
       time=systime(/sec)
       message,'Sarting SFQ cleaning',/info
     endif
-    sfq_clean,bx,by,3,/median,show=show
+    sfq_clean,bx,by,3,/median,show=show, fix_field = fix_field
     if n_elements(mode) le 0 then mode=0
     if mode eq 0 then begin
-    if min((size(bx))[1:2]) gt 150 then sfq_clean,bx,by,19,gauss=gauss,median=median,show=show
-   if min((size(bx))[1:2]) gt 100 then sfq_clean,bx,by,9,gauss=gauss,median=median,show=show
+    if min((size(bx))[1:2]) gt 150 then sfq_clean,bx,by,19,gauss=gauss,median=median,show=show, fix_field = fix_field
+   if min((size(bx))[1:2]) gt 100 then sfq_clean,bx,by,9,gauss=gauss,median=median,show=show, fix_field = fix_field
    endif
-    sfq_clean,bx,by,5,gauss=gauss,median=median,show=show
-    sfq_clean,bx,by,3,/median,show=show
+    sfq_clean,bx,by,5,gauss=gauss,median=median,show=show, fix_field = fix_field
+    sfq_clean,bx,by,3,/median,show=show;, fix_field = fix_field
     if not keyword_set(silent) then begin
       time=systime(/sec)-time
       message,'SFQ cleaning complete in '+strcompress(time,/remove_all)+' seconds',/info
@@ -42,6 +42,10 @@ pro sfq_clean,bx,by,s,gauss=gauss,median=median,show=show,mode=mode,silent=silen
      if keyword_set(median) then begin
       mbx=median(bx,s,/even)
      mby=median(by,s,/even)
+    endif
+    if keyword_set(fix_field) then begin
+      mbx[fix_field.idx] = fix_field.bx
+      mby[fix_field.idx] = fix_field.by
     endif
     ind= where((mbx*bx+by*mby) lt 0)
     if n_elements(ind) lt ((n_elements(bx)*0.0001) >5) then goto,eee

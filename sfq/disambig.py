@@ -2,9 +2,10 @@
 
 import numpy as np
 import time
+
 from sfq.data import get_str_mag
 from sfq.field import pot_vmag
-from sfq.utils import smooth_2d, median_2d, gauss_smooth, gaussf
+from sfq.utils import gauss_smooth, gaussf, median_2d, smooth_2d
 
 
 def sfq_step1(mag, pot, silent=False, acute=False):
@@ -74,7 +75,7 @@ def _clean_iterative(bx, by, s, use_gauss=False, use_median=False):
 
     Args:
         bx, by: Transverse field components (modified in place).
-        s: Smoothing scale.
+        s: IDL filter width / scale (same meaning as in ``sfq_clean.pro``).
         use_gauss: Use Gaussian smoothing.
         use_median: Use median filtering.
     """
@@ -90,12 +91,16 @@ def _clean_iterative(bx, by, s, use_gauss=False, use_median=False):
             mbx = median_2d(bx, s)
             mby = median_2d(by, s)
         else:
+            # IDL: smooth(bx,s,/edge_tr) - bx/float(s^2)
             mbx = smooth_2d(bx, s) - bx / float(s ** 2)
             mby = smooth_2d(by, s) - by / float(s ** 2)
 
         dot = mbx * bx + mby * by
         ind = dot < 0
-        threshold = max(len(bx.ravel()) * 0.0001, 5)
+        # Match IDL intent: stop when remaining flips are a tiny fraction.
+        # IDL uses a boolean expression that effectively stops near ~0 flips for
+        # typical FOVs; keep a small absolute floor for stability.
+        threshold = max(bx.size * 0.0001, 5)
         if np.sum(ind) < threshold:
             break
         bx[ind] = -bx[ind]
@@ -114,9 +119,9 @@ def sfq_clean(bx, by, mode=False, silent=False):
     if not silent:
         print("Starting SFQ cleaning")
 
-    # Make copies to avoid modifying originals directly in recursion
-    bx = np.asarray(bx, dtype=float)
-    by = np.asarray(by, dtype=float)
+    # Explicit copies: np.asarray does not copy existing float ndarrays.
+    bx = np.array(bx, dtype=float, copy=True)
+    by = np.array(by, dtype=float, copy=True)
 
     # Multi-scale cleaning cascade
     _clean_iterative(bx, by, 3, use_median=True)
@@ -179,8 +184,8 @@ def sfq_disambig(bx, by, bz, apos, rsun, mode=False, silent=False, acute=False):
     """Main entry point: resolves 180-degree azimuth ambiguity.
 
     Args:
-        bx: Ambiguous Bx transverse component (2D array, modified in place).
-        by: Ambiguous By transverse component (2D array, modified in place).
+        bx: Ambiguous Bx transverse component (2D array; not modified).
+        by: Ambiguous By transverse component (2D array; not modified).
         bz: LOS component of magnetic field (2D array).
         apos: Position [x_min, y_min, x_max, y_max] in arcsec.
         rsun: Solar radius in arcsec.
@@ -192,21 +197,23 @@ def sfq_disambig(bx, by, bz, apos, rsun, mode=False, silent=False, acute=False):
         Tuple (bx_disambig, by_disambig) - disambiguated transverse components.
     """
     t0 = time.time()
-    mag = get_str_mag(bx, by, bz, apos, rsun)
+    # Copy so in-place step1/clean flips do not mutate the caller's arrays.
+    mag = get_str_mag(np.array(bx, dtype=float, copy=True),
+                      np.array(by, dtype=float, copy=True),
+                      bz, apos, rsun)
 
     n_pixels = bx.size
-    field_extent = apos[2] - apos[0]
+    field_extent = float(apos[2] - apos[0])
 
-    # For small fields: full-frame processing
-    if field_extent < 0.5 * rsun or n_pixels < 1024 * 1024:
-        mag = sfq_frame(mag, mode=mode, silent=silent, acute=acute)
-        if not silent:
-            print(f"Full SFQ disambiguation complete in {time.time() - t0:.2f} seconds")
-        return mag['t1'].copy(), mag['t2'].copy()
+    # IDL large-FOV path uses pex_bl tiling (IDL only in this repo today).
+    # Reject unsupported large inputs instead of claiming a reduced-grid path.
+    if field_extent >= 0.5 * float(rsun) and n_pixels >= 1024 * 1024:
+        raise ValueError(
+            "SFQ large-FOV block processing (pex_bl tiling) is not implemented; "
+            f"got extent={field_extent:.1f}\" (>= 0.5*rsun) and "
+            f"{n_pixels} pixels (>= 1024^2). Crop to a smaller FOV first."
+        )
 
-    # For large fields: use full-frame with reduced grid (simplified block processing)
-    if not silent:
-        print("Large field of view detected, using direct potential field computation")
     mag = sfq_frame(mag, mode=mode, silent=silent, acute=acute)
     if not silent:
         print(f"Full SFQ disambiguation complete in {time.time() - t0:.2f} seconds")
